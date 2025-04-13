@@ -140,6 +140,46 @@ f(10);`,
 	}
 }
 
+func TestStringLiteral(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{`"Hello World!";`, "Hello World!"},
+		{`"HelloWorld!";`, "HelloWorld!"},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+
+		obj, ok := evaluated.(*object.String)
+
+		if !ok {
+			t.Fatalf("Object is not String. got=%T (%+v)", evaluated, evaluated)
+		}
+
+		if obj.Value != tt.expected {
+			t.Fatalf("String has wrong value. got=%q", obj.Value)
+		}
+
+	}
+}
+
+func TestStringConcatenation(t *testing.T) {
+	input := `"Hello" + " " + "World!";`
+
+	evaluated := testEval(input)
+	str, ok := evaluated.(*object.String)
+
+	if !ok {
+		t.Fatalf("object is not String. got %T (%+v)", evaluated, evaluated)
+	}
+
+	if str.Value != "Hello World!" {
+		t.Errorf("String has wrong value. got=%q", str.Value)
+	}
+}
+
 func TestBangOperator(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -276,6 +316,38 @@ func TestFunctionApplication(t *testing.T) {
 
 	for _, tt := range tests {
 		testIntegerObject(t, testEval(tt.input), tt.expected)
+	}
+}
+
+func TestBuiltinFunctions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`len("")`, 0},
+		{`len("four")`, 4},
+		{`len("hello world")`, 11},
+		{`len(1)`, "argument to `len` not supported, got INTEGER"},
+		{`len("one", "two")`, "wrong number of arguments. got=2, want=1"},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case string:
+			errorObj, ok := evaluated.(*object.Error)
+
+			if !ok {
+				t.Fatalf("Object not an error. got=%T (%+v)", evaluated, evaluated)
+			}
+
+			if errorObj.Message != tt.expected {
+				t.Fatalf("Incorrect error message. expected=%s got=%s", tt.expected, errorObj.Message)
+			}
+		}
 	}
 }
 
