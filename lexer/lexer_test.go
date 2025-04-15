@@ -27,6 +27,7 @@ if (5 < 10) {
 10 != 9;
 let name = "Grant Ralls";
 "foobar";
+[1, 2];
 `
 
 	tests := []struct {
@@ -112,6 +113,12 @@ let name = "Grant Ralls";
 		{token.STRING, "Grant Ralls"},
 		{token.SEMICOLON, ";"},
 		{token.STRING, "foobar"},
+		{token.SEMICOLON, ";"},
+		{token.LBRACKET, "["},
+		{token.INT, "1"},
+		{token.COMMA, ","},
+		{token.INT, "2"},
+		{token.RBRACKET, "]"},
 		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
