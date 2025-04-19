@@ -2,6 +2,12 @@
 
 This repo contains the completed monkey interpreter from [Writing an Interpreter in Go](https://interpreterbook.com/).
 
+# Running the REPL
+
+1. Install [Go](https://go.dev/)
+2. Clone this repo
+3. Run `go run main.go`
+
 # Packages
 
 - lexer - Takes code (as a string) as input and spits out tokens with `NextToken()`
