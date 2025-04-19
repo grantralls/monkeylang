@@ -1,3 +1,5 @@
+// The goal of the evaluator is to take an ast and return the results
+// of running the code. It also returns runtime errors.
 package evaluator
 
 import (
@@ -73,9 +75,93 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return applyFunction(function, args)
 	case *ast.StringLiteral:
 		return &object.String{Value: node.Value}
+	case *ast.IndexExpression:
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+
+		index := Eval(node.Index, env)
+		if isError(index) {
+			return index
+		}
+		return evalIndexExpression(left, index)
+	case *ast.ArrayLiteral:
+		elements := evalExpressions(node.Elements, env)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+		return &object.Array{Elements: elements}
+	case *ast.HashLiteral:
+		return evalHashLiteral(node, env)
 	}
 
 	return nil
+}
+
+func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
+	pairs := make(map[object.HashKey]object.HashPair)
+
+	for key, val := range node.Pairs {
+		keyObj := Eval(key, env)
+
+		if isError(keyObj) {
+			return keyObj
+		}
+
+		keyHashable, ok := keyObj.(object.Hashable)
+
+		if !ok {
+			return newError("unusable as a hash key: %T", key)
+		}
+
+		val := Eval(val, env)
+
+		if isError(val) {
+			return val
+		}
+
+		hashKey := keyHashable.HashKey()
+		pairs[hashKey] = object.HashPair{Key: keyObj, Value: val}
+	}
+
+	return &object.Hash{Pairs: pairs}
+}
+
+func evalIndexExpression(left object.Object, right object.Object) object.Object {
+	switch {
+	case left.Type() == object.ARRAY_OBJ && right.Type() == object.INTEGER_OBJ:
+		return evalArrayIndexExpression(left, right)
+	case left.Type() == object.HASH_OBJ:
+		return evalHashIndexExpression(left, right)
+	default:
+		return newError("index operator not supported: %s", left.Type())
+	}
+}
+
+func evalHashIndexExpression(left object.Object, right object.Object) object.Object {
+	leftHash := left.(*object.Hash)
+	rightHashable, ok := right.(object.Hashable)
+	if !ok {
+		return newError("key of type %T is not hashable", right)
+	}
+	pair, ok := leftHash.Pairs[rightHashable.HashKey()]
+
+	if !ok {
+		return NULL
+	}
+
+	return pair.Value
+}
+
+func evalArrayIndexExpression(left object.Object, right object.Object) object.Object {
+	elements := left.(*object.Array).Elements
+	idx := right.(*object.Integer).Value
+	max := int64(len(elements) - 1)
+	if idx < 0 || idx > max {
+		return NULL
+	}
+	return elements[idx]
 }
 
 func applyFunction(fn object.Object, args []object.Object) object.Object {

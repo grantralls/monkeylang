@@ -10,7 +10,7 @@ const (
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
 
-	// Identifieser + Literals
+	// Identifier + Literals
 	IDENT = "IDENT" // add, foobar, x, y
 	INT   = "INT"   // 1234567890
 
@@ -28,6 +28,7 @@ const (
 	// Delimiters
 	COMMA     = ","
 	SEMICOLON = ";"
+	COLON     = ":"
 
 	LPAREN = "("
 	RPAREN = ")"
